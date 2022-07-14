@@ -1,0 +1,60 @@
+<div class="container mt-4">
+    <div class="panel panel-default">
+        <div class="panel-heading mb-4">
+            <h4>Upload and Download Files</h4>
+        </div>
+        <div class="panel-body">
+            <strong>Select files from your computer</strong>
+            <div class="mb-3">
+                <div *ngIf="fileStatus.status === 'progress'" class="progress">
+                    <div [style.width.%]="fileStatus.percent" class="progress-bar progress-bar-animated bg-primary"
+                        role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"
+                        aria-label="File progress">
+                        {{ fileStatus.requestType }} {{ fileStatus.percent }}%
+                    </div>
+                </div>
+            </div>
+
+
+            <form enctype="multipart/form-data">
+                <fieldset>
+                    <div class="form-group">
+                        <div>
+                            <!-- * 
+                                 * $any(), es similar al tipo any en typescript, pero aquí en html. 
+                                 * Aquí lo uso para solucionar el error cuando enviamos el siguiente parámetro:
+                                 * $event.target.files
+                                 * El error mostrado es:
+                                 * Property 'files' does not exist on type 'EventTarget'
+                                 * Para solucionarlo desde el mismo html, usamos el $any($event.target).files,
+                                 * Aunque se debería evitar hacer uso de los tipos de datos any en Angular,
+                                 * pero como el método está ya esperando un parámetro del tipo File[], es que 
+                                 * optaremos esa solución.
+                                 * 
+                                 * Otra solución habría sido modificar el parámetro del método, a un tipo event 
+                                 * y dentro del método hacer la conversión como sigue:
+                                 * (event.target as  HTMLInputElement).files
+                                 * -->
+                            <input type="file" (change)="onUploadFiles($any($event.target).files)" multiple name="files"
+                                class="form-control" aria-label="select files">
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+
+
+
+            <div *ngIf="filenames.length > 0" class="mt-3 js-upload-finished">
+                <h3>Processed files</h3>
+                <div class="list-group">
+                    <span *ngFor="let filename of filenames"
+                        class="list-group-item list-group-item-success d-flex justify-content-between">
+                        <span>{{ filename }}</span>
+                        <a (click)="onDownloadFile(filename);" class="alert-success float-right pointer">Download</a>
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
