@@ -1,7 +1,15 @@
-import { HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { HttpEvent, HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { Component } from '@angular/core';
 
+import { saveAs } from 'file-saver';
+
 import { FileService } from './file.service';
+
+interface FileStatus {
+  status: string;
+  requestType: string;
+  percent: number;
+}
 
 @Component({
   selector: 'app-root',
@@ -9,6 +17,9 @@ import { FileService } from './file.service';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+
+  filenames: string[] = [];
+  fileStatus: FileStatus = { status: '', requestType: '', percent: 0 };
 
   constructor(private fileService: FileService) { }
 
@@ -36,8 +47,36 @@ export class AppComponent {
       });
   }
 
-  private reportPorgress(httpEvent: HttpEvent<string[] | Blob>) {
-    throw new Error('Method not implemented.');
+  private reportPorgress(httpEvent: HttpEvent<string[] | Blob>): void {
+    switch (httpEvent.type) {
+      case HttpEventType.UploadProgress:
+        this.updateStatus(httpEvent.loaded, httpEvent.total!, 'Uploading...');
+        break;
+      case HttpEventType.DownloadProgress:
+        this.updateStatus(httpEvent.loaded, httpEvent.total!, 'Downloading...');
+        break;
+      case HttpEventType.ResponseHeader:
+        console.log('Header returned', httpEvent);
+        break;
+      case HttpEventType.Response:
+        if (httpEvent.body instanceof Array) { //* Si la respueta trae un arreglo de nombres, entonces fue por el upload
+          httpEvent.body.forEach(filename => this.filenames.unshift(filename));
+        } else { //* Download logic
+          saveAs(new File([httpEvent.body!], httpEvent.headers.get('File-Name')!, { type: `${httpEvent.headers.get('Content-Type')};charset=utf-8` }));
+          //*Otra forma
+          //*saveAs(new Blob([httpEvent.body!], { type: `${httpEvent.headers.get('Content-Type')};charset=utf-8` }), httpEvent.headers.get('File-Name')!);
+        }
+        break;
+      default:
+        console.log('Switch default', httpEvent);
+        break;
+    }
+  }
+
+  private updateStatus(loaded: number, total: number, requestType: string) {
+    this.fileStatus.status = 'progress';
+    this.fileStatus.requestType = requestType;
+    this.fileStatus.percent = Math.round(100 * loaded / total);
   }
 
 }
